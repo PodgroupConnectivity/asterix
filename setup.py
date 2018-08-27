@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='asterix',
       version='0.3',
@@ -38,4 +38,10 @@ All modules are platform independent, working with Python 2.7
 
 All modules rely on pyscard, a package implementing PCSC layer
 for communication with smartcards.
-""", )
+""",
+      install_requires=[
+        "pyscard>=1.6.16",
+        "pycrypto>=2.6.1",
+        "ecdsa>= 0.11",
+      ],
+)
