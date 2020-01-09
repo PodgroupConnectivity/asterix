@@ -40,8 +40,8 @@ try:
 except ImportError:
     __all__ = ('DDC', 'SCP03')
 # asterix
-from formutil import l2s, s2l, s2int, pad80, unpad80, partition
-from GAF import GAF
+from .formutil import l2s, s2l, s2int, pad80, unpad80, partition
+from .GAF import GAF
 
 INS_INIT_UPDATE = 0x50
 INS_EXT_AUTH    = 0x82
@@ -105,7 +105,7 @@ polynomial x (modulo irreducible polynomial)"""
         xorkey = xorKey2
     else:
         xorkey = xorKey1
-    for i in xrange(BS):
+    for i in range(BS):
         odata[-BS+i] ^= ord(xorkey[i])
     data = ''.join([chr(x) for x in odata])
     cipher = AES.new(key, AES.MODE_CBC, IV='\0'*BS)
@@ -278,7 +278,7 @@ Raise exception in case of wrong response. """
             "Wrong SL %02X" % SL
         self.SL = SL
         self.rmacSL = 0          # 0x10 or 0x30 after BEGIN R-MAC
-        self.cmdCount = 0L       # command counter for C-ENC ICV
+        self.cmdCount = 0       # command counter for C-ENC ICV
 
         if 'host_cryptogram' not in self.__dict__:
             self.deriveKeys(None)
@@ -412,8 +412,8 @@ Input APDU and output APDU are list of u8. """
         cdata = l2s(apdu[5:])
         if self.SL & SL_CENC and lc > 0:  # C-ENC
             k = AES.new(self.SENC, AES.MODE_ECB)
-            ICV = k.encrypt(pack(">QQ", self.cmdCount / 0x10000000000000000L,
-                                 self.cmdCount % 0x10000000000000000L))
+            ICV = k.encrypt(pack(">QQ", self.cmdCount / 0x10000000000000000,
+                                 self.cmdCount % 0x10000000000000000))
             k = AES.new(self.SENC, AES.MODE_CBC, IV=ICV)
             data2enc = pad80(cdata, 16)
             cdata = k.encrypt(data2enc)
@@ -439,9 +439,9 @@ Input APDU and output APDU are list of u8. """
         if (self.SL | self.rmacSL) & SL_RENC and len(dresp) > 0:
             assert len(dresp) <= 0xEF, "Data too long for RENC+RMAC"
             k = AES.new(self.SENC, AES.MODE_ECB)
-            ICV = k.encrypt(pack(">QQ", 0x8000000000000000L |
-                                 self.cmdCount / 0x10000000000000000L,
-                                 self.cmdCount % 0x10000000000000000L))
+            ICV = k.encrypt(pack(">QQ", 0x8000000000000000 |
+                                 self.cmdCount / 0x10000000000000000,
+                                 self.cmdCount % 0x10000000000000000))
             k = AES.new(self.SENC, AES.MODE_CBC, IV=ICV)
             dresp = k.encrypt(pad80(dresp, 16))
         if (self.SL | self.rmacSL) & SL_RMAC:
@@ -483,8 +483,8 @@ Input APDU and output APDU are list of u8. """
             assert lc % 16 == 0, "Encoded data length not multiple of BS"
             k = AES.new(self.SENC, AES.MODE_ECB)
             ICV = k.encrypt(pack(">QQ",
-                                 self.cmdCount / 0x10000000000000000L,
-                                 self.cmdCount % 0x10000000000000000L))
+                                 self.cmdCount / 0x10000000000000000,
+                                 self.cmdCount % 0x10000000000000000))
             k = AES.new(self.SENC, AES.MODE_CBC, IV=ICV)
             pdata = k.decrypt(data)
             data = unpad80(pdata, 16)
@@ -511,9 +511,9 @@ Input APDU and output APDU are list of u8. """
             assert len(dresp) % 16 == 0, \
                 "Length of encrypted data not multiple of 16: %d" % len(dresp)
             k = AES.new(self.SENC, AES.MODE_ECB)
-            ICV = k.encrypt(pack(">QQ", 0x8000000000000000L |
-                                 self.cmdCount / 0x10000000000000000L,
-                                 self.cmdCount % 0x10000000000000000L))
+            ICV = k.encrypt(pack(">QQ", 0x8000000000000000 |
+                                 self.cmdCount / 0x10000000000000000,
+                                 self.cmdCount % 0x10000000000000000))
             k = AES.new(self.SENC, AES.MODE_CBC, IV=ICV)
             ddata = k.decrypt(dresp)
             data = unpad80(ddata, 16)
@@ -711,10 +711,10 @@ class Test128(unittest.TestCase):
         self.assertEqual(papdu, apdu_i4l)
 
     def test_unwrapAPDU_01(self):
-        self.unwrapAPDU(01)
+        self.unwrapAPDU(0o1)
 
     def test_unwrapAPDU_03(self):
-        self.unwrapAPDU(03)
+        self.unwrapAPDU(0o3)
 
     def test_beginRMAC(self):
         host_challenge = unhexlify('0807060504030201')

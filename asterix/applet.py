@@ -33,8 +33,8 @@ from Crypto.Hash import SHA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Cipher import DES
 # asterix
-from formutil import s2l, derLV, pad80, bxor, dict2RSA
-from GAF import GAF
+from .formutil import s2l, derLV, pad80, bxor, dict2RSA
+from .GAF import GAF
 __all__ = ('Applet', 'RSAtoken', 'DEStoken', 'DESsign', 'RSAsign')
 
 INS_DELETE  = 0xE4
@@ -152,8 +152,8 @@ Expected parameters (in dict):
         h = hashlib.new('sha1')
         h.update(ijc_data)
         ijc_hash = h.digest()
-        print "Loading '%s', len = %d, SHA1 = %s" % \
-            (self.file_ijc, ijc_len, hexlify(ijc_hash).upper())
+        print("Loading '%s', len = %d, SHA1 = %s" % \
+            (self.file_ijc, ijc_len, hexlify(ijc_hash).upper()))
 
         # build Install for load APDU
         sysparams = ''.join(getattr(self, 'par_sysLoad', [
@@ -193,7 +193,7 @@ Expected parameters (in dict):
 
         napdu = (len(load_data) + datalen-1) / datalen
         P1 = 0
-        for i in xrange(napdu):
+        for i in range(napdu):
             if i == napdu-1:  # the last block
                 P1 = 0x80
                 datalen = len(load_data)
@@ -271,7 +271,7 @@ class DESsign:
         s = pad80(s, 8)
         q = len(s) / 8
         h = '\0'*8   # zero ICV
-        for i in xrange(q):
+        for i in range(q):
             h = self.e.encrypt(bxor(h, s[8*i:8*(i+1)]))
         h = self.d.decrypt(h)
         h = self.e.encrypt(h)

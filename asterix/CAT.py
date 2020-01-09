@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 from struct import pack, unpack
 from binascii import hexlify
 # asterix
-from formutil import int2s, l2s, derLen, derLV, split2TLV
+from .formutil import int2s, l2s, derLen, derLV, split2TLV
 __all__ = ('ProactiveException', 'SMS_MO', 'SMS_MT', 'ProactiveSession')
 
 
@@ -39,7 +39,7 @@ class TLV(object):
 tag    - u8, u16, u24 integer
 value  - string """
     # COMPACT = ISO 7816-4 SIMPLE
-    (BER, COMPACT, COMPREH) = range(3)
+    (BER, COMPACT, COMPREH) = list(range(3))
 
     def __init__(self, tag, value, typ=BER):
         self.tag = tag
@@ -173,7 +173,7 @@ class SMS_MT(object):
         concatHead = chr(len(concatHead) + 1) + concatHead
         plOff += plLen
         plLen = 140 - len(concatHead) - 1
-        for i in xrange(2, nMes):
+        for i in range(2, nMes):
             mes = TPheader + chr(udl) + concatHead + chr(i) + \
                   payload[plOff:plOff+plLen]
             plOff += plLen
@@ -236,11 +236,11 @@ class SMS_MT(object):
                 for i in ('MTI', 'OA', 'PID', 'DCS', 'SCTS', 'zConc8b',
                           'concRef', 'nMes'):
                     if self.__dict__[i] != locals()[i]:
-                        print "Parameter %s changed: '%s' -> '%s'" % \
+                        print("Parameter %s changed: '%s' -> '%s'" % \
                             (i, self.__dict__[i].__str__(),
-                              locals()[i].__str__())
+                              locals()[i].__str__()))
                 if iMes in self.messages:
-                    print "Duplicate message %d, ignored" % iMes
+                    print("Duplicate message %d, ignored" % iMes)
             else:  # the first (or the only) message
                 self.MTI, self.OA, self.PID, self.DCS, self.SCTS = \
                     MTI, OA, PID, DCS, SCTS
@@ -256,9 +256,9 @@ class SMS_MT(object):
     def mergeUserData(self):
         """ Merges sec. data from received TPDUs.
 Return (UDH, payload)"""
-        diffset = set(xrange(1, self.nMes+1)) - set(self.messages.keys())
+        diffset = set(range(1, self.nMes+1)) - set(self.messages.keys())
         assert diffset == set(), "Missing messages: " + list(diffset).__str__()
-        payload = ''.join([self.messages[i] for i in xrange(1, self.nMes+1)])
+        payload = ''.join([self.messages[i] for i in range(1, self.nMes+1)])
         return(self.UDH, payload)
 
     def createEnv(self, messages, cla=0x80):
@@ -321,8 +321,8 @@ class SMS_MO(object):
         else:
             for i in ('SCA', 'MTI', 'DA', 'PID', 'DCS', 'VP'):
                 if self.__dict__[i] != locals()[i]:
-                    print "Parameter %s changed: '%s' -> '%s'" % \
-                        (i, self.__dict__[i].__str__(), locals()[i].__str__())
+                    print("Parameter %s changed: '%s' -> '%s'" % \
+                        (i, self.__dict__[i].__str__(), locals()[i].__str__()))
         # analyze concatenation
         if MTI & 0x40:
             UDHL = ord(UD[0])
@@ -355,7 +355,7 @@ class SMS_MO(object):
                          "or number of messages %d vs %d") %\
                         (self.concRef, concRef, self.nMes, nMes)
                 if iMes in self.messages:
-                    print "Duplicate message %d, ignored" % iMes
+                    print("Duplicate message %d, ignored" % iMes)
                     return
                 self.messages[iMes] = UD[1+UDHL:]
             else:
@@ -386,7 +386,7 @@ class SMS_MO(object):
             raise ValueError("Missing messages: %s" % ', '.join(
                 ['%d' % i for i in missing]))
         self.payload = ''.join([self.messages[i]
-                                for i in xrange(1, self.nMes+1)])
+                                for i in range(1, self.nMes+1)])
         return (self.UDH, self.payload)
 
     def __str__(self):
@@ -508,8 +508,8 @@ Repeat/cut the provided text if necessary."""
     prompt = tlv_ts[0].value[1:]
     lenmin, lenmax = [ord(x) for x in tlv_rl[0].value[0]]
     assert lenmin <= lenmax, "Min length > max length in Get Input"
-    print "PaC Get Input DCS=%02X '%s', resp. len=<%d:%d>" % (
-        ord(DCS), prompt, lenmin, lenmax)
+    print("PaC Get Input DCS=%02X '%s', resp. len=<%d:%d>" % (
+        ord(DCS), prompt, lenmin, lenmax))
     if par is None or 'GetInputResp' not in par:
         resptext = 'Default Text '
     else:  # rotate provided values
@@ -522,7 +522,7 @@ Repeat/cut the provided text if necessary."""
         resptext = resptext*(lenmin/len(resptext) + 1)[:lenmin]
     elif len(resptext) > lenmax:
         resptext = resptext[:lenmax]
-    print "T-R with text '%s'" % resptext
+    print("T-R with text '%s'" % resptext)
     termResp.TLVs.append(TLV(T_TEXT_STR, DCS+resptext))
 
 
@@ -537,7 +537,7 @@ Expects that par contains dictionary with 'SMS_MO': <SMS_MO object>."""
     tpdu = tlv_tpdu[0]
     if par is not None and 'SMS_MO' in par:
         iMes, nMes = par['SMS_MO'].addMessage(sca, tpdu)
-        print "PaC Send SMS, message %d of %d" % (iMes, nMes)
+        print("PaC Send SMS, message %d of %d" % (iMes, nMes))
 
 
 def hook_display_text(proCmd, termResp, par):
@@ -561,8 +561,8 @@ def hook_display_text(proCmd, termResp, par):
         duration = "; duration = "+duration
     else:
         duration = ""
-    print "PaC Display Text, DCS=%02X '%s'%s" % (
-        ord(dt[0]), dt[1:], duration)
+    print("PaC Display Text, DCS=%02X '%s'%s" % (
+        ord(dt[0]), dt[1:], duration))
 
 # ## constants ###
 # tags for proactive commands and envelopes

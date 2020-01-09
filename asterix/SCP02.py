@@ -33,9 +33,9 @@ from Crypto.Cipher import DES, DES3
 # pyscard
 from smartcard.CardConnectionDecorator import CardConnectionDecorator
 # asterix
-from formutil import l2s, s2l, partition, bxor, pad80, unpad80
-from mycard import ISOException
-from GAF import GAF
+from .formutil import l2s, s2l, partition, bxor, pad80, unpad80
+from .mycard import ISOException
+from .GAF import GAF
 __all__ = ('SCP02', 'SCP02Connection')
 
 ZERO8 = '\0' * 8

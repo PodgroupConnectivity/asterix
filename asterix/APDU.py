@@ -40,12 +40,13 @@ from ecdsa import ecdsa, ellipticcurve
 # pyscard
 from smartcard.ATR import ATR
 # asterix
-from formutil import s2l, l2s, derLen, derLV, s2int, int2s, s2ECP, chunks,\
+from .formutil import s2l, l2s, derLen, derLV, s2int, int2s, s2ECP, chunks,\
     split2TLV, findTLValue, swapNibbles
-from GAF import GAF
-from applet import DESsign
-from SCP03 import CMAC
-from mycard import ISOException, resetCard
+from .GAF import GAF
+from .applet import DESsign
+from .SCP03 import CMAC
+from .mycard import ISOException, resetCard
+from functools import reduce
 __all__ = ('calcKCV', 'putKey', 'storeDataPutKey',
            'push2B_DGI', 'X963keyDerivation', 'Push3scenario',
            'selectApplet', 'openLogCh', 'closeLogCh',
@@ -149,7 +150,7 @@ Currently only Format1 supported.
                 encValue = derLen(keyVal) + encValue
                 # see ETSI 102.226 rel 9+, 8.2.1.5
                 if keyType == KeyType.AES and keyId == 2 and \
-                   newKeyVersion in range(0x01, 0x10) + [0x11]:
+                   newKeyVersion in list(range(0x01, 0x10)) + [0x11]:
                     encValue += chr(lenMAC)
         else:
             encValue = keyVal
@@ -317,7 +318,7 @@ Reference: TR-03111: BSI TR-03111 Elliptic Curve Cryptography, Version 2.0
     keyData = ''
     l = h().digest_size
     j = (bytelen - 1)/l + 1
-    for i in xrange(1, 1+j):
+    for i in range(1, 1+j):
         keyData += h(sharedSecret + pack(">L", i) + sharedInfo).digest()
     return keyData[:bytelen]
 
@@ -369,7 +370,7 @@ Return <data for StoreData>"""
         else:
             secexp = s2int(privkey)
             assert 1 < secexp < self.generator.order(), "Wrong eSK.AP.ECKA"
-        print "eSK.AP.ECKA = %X" % secexp
+        print("eSK.AP.ECKA = %X" % secexp)
         pubkey = self.generator * secexp
         dgi7F49 = pack(">HBB", 0x7F49, 2*self.bytelen+1, 4) + \
             int2s(pubkey.x(), self.bytelen * 8) + \
@@ -377,7 +378,7 @@ Return <data for StoreData>"""
         # calculate Shared Secret, suppose that cofactor is 1
         S_AB = secexp * self.pkCASD
         self.sharedSecret = int2s(S_AB.x(), self.bytelen * 8)
-        print "Shared Secret =", hexlify(self.sharedSecret).upper()
+        print("Shared Secret =", hexlify(self.sharedSecret).upper())
         # build DGI 00A6
         if zID:
             assert hasattr(self, 'IIN'), "Missing IIN while CardId requested"
@@ -393,7 +394,7 @@ Return <data for StoreData>"""
                       (zID and 4 or 0)
         assert all([k[0] in (KeyType.DES_IMPLICIT, KeyType.AES) for k in keys])
         ktl1 = keys[0]
-        zDifKey = any([keys[i] != ktl1 for i in xrange(1, len(keys))])
+        zDifKey = any([keys[i] != ktl1 for i in range(1, len(keys))])
         tA6value = pack("BBBB", T_scenarioID, 2, 3, scenarioPar)
         if zDifKey:
             self.receiptAlgo = CMAC
@@ -445,7 +446,7 @@ Return generated keys (tuple of strings)"""
         try:
             data2rec = self.tA6
         except KeyError:
-            print "Run makeDGI first"
+            print("Run makeDGI first")
             return
         respTLV = split2TLV(respData)
         if self.zDR:
@@ -464,13 +465,13 @@ Return generated keys (tuple of strings)"""
             sharedInfo += DR
         if hasattr(self, 'HostCardID'):
             sharedInfo += self.HostCardID
-        print "Shared Info =", hexlify(sharedInfo).upper()
+        print("Shared Info =", hexlify(sharedInfo).upper())
 
         keyData = X963keyDerivation(self.sharedSecret, sum(self.keyLens),
                                     sharedInfo)
         keyDataIt = chunks(keyData, self.keyLens)
-        receiptKey = keyDataIt.next()
-        print "Receipt Key =", hexlify(receiptKey).upper()
+        receiptKey = next(keyDataIt)
+        print("Receipt Key =", hexlify(receiptKey).upper())
         expReceipt = self.receiptAlgo(receiptKey, data2rec)
         assert receipt == expReceipt, "Receipt verification failed"
         return [k for k in keyDataIt if k]  # skip empty rest
@@ -530,7 +531,7 @@ class GetStatusData:
             nmod = respdataPM[ind+2]
             ind += 3
             mods = []
-            for i in xrange(nmod):
+            for i in range(nmod):
                 length = respdataPM[ind]
                 mods.append(l2s(respdataPM[ind+1: ind+1+length]))
                 ind += length + 1
@@ -775,7 +776,7 @@ Read EF_DIR, USIM = first application with AID of USIM (3GPP TS 31.110)"""
         fileDesc[:2] == '\x42\x21'  # linear EF
     recLen, nRec = unpack(">HB", fileDesc[2:5])
     aids = []
-    for recNum in xrange(1, nRec+1):
+    for recNum in range(1, nRec+1):
         try:
             r = readRecord(c, recNum)
             if r == '\xFF' * len(r):
@@ -809,7 +810,7 @@ def cardInfo(c, USIMpin=None, logCh=0):
         fileDesc[:2] == '\x42\x21'  # linear EF
     recLen, nRec = unpack(">HB", fileDesc[2:5])
     dirDO = []
-    for recNum in xrange(1, nRec+1):
+    for recNum in range(1, nRec+1):
         try:
             r = readRecord(c, recNum)
             if r == '\xFF' * len(r):

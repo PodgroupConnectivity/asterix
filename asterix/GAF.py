@@ -145,7 +145,8 @@ Return (Closing, result as []) or result (if depth==0) """
         m = re_hexdata.match(substream)
         if m:
             self.updatePos(substream[:m.end()])
-            return re.sub(r'\s', '', m.group()).decode('hex')
+            # return re.sub(r'\s', '', m.group()).decode('hex')
+            return bytes.fromhex(re.sub(r'\s', '', m.group()))
 
         m = re_literal.match(substream)
         if m:
@@ -223,16 +224,18 @@ def len2as(l, t):
 
 
 def evalValue(tree, table):
-    value = ''
+    # value = ''
+    value = bytearray()
     for item in tree:
-        if isinstance(item, str):
+        # if isinstance(item, str):
+        if isinstance(item, bytes):
             value += item
         elif isinstance(item, LV):
             subvalue = evalValue(item.value, table)
             value += len2as(len(subvalue), item.lenCoding) + subvalue
         else:  # object
             value += table[item.Id]
-    return value
+    return bytes(value)
 
 
 class LV:

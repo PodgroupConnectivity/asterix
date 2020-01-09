@@ -36,8 +36,8 @@ from smartcard.CardConnectionDecorator import CardConnectionDecorator
 import smartcard.scard as scard
 from smartcard.pcsc.PCSCExceptions import *
 # asterix
-from formutil import l2s, s2l
-from GAF import *
+from .formutil import l2s, s2l
+from .GAF import *
 __all__ = ( 'dispTime', 'ISOException', 'connectCard', 'resetCard' )
 
 def getTime():
@@ -48,7 +48,7 @@ def getTime():
     elif pf == 'linux2':
         return 1000. * time.time()
     else:
-        raise RuntimeError, "getTime() not implemented for platform %s" % pf
+        raise RuntimeError("getTime() not implemented for platform %s" % pf)
 
 def dispTime( c, zOn = True ):
     """ For CardConnection or derived object <c> set Displaying elapsed time
@@ -58,8 +58,8 @@ on/off (zOn = True/False) """
         c = c.component
     if not isinstance( c, smartcard.pcsc.PCSCCardConnection.
                        PCSCCardConnection ):
-        raise RuntimeError, "dispTime( c, zOn = True ) expects " +\
-            "PCSCCardConnection or CardConnectionDecorator as c"
+        raise RuntimeError("dispTime( c, zOn = True ) expects " +\
+            "PCSCCardConnection or CardConnectionDecorator as c")
     c.zTime = zOn
     
 class ISOException( Exception ):
@@ -72,25 +72,27 @@ class ConsoleObserver( CardConnectionObserver ):
     def update( self, cardconnection, event ):
         zTime = cardconnection.__dict__.get( 'zTime', False )
         if event.type == 'connect':
-            print 'Connecting to ' + cardconnection.getReader()
+            print('Connecting to ' + cardconnection.getReader())
         elif event.type == 'disconnect':
-            print 'Disconnecting from ' + cardconnection.getReader()
+            print('Disconnecting from ' + cardconnection.getReader())
         elif event.type == 'command':
-            apdubytes = [ chr( x ) for x in event.args[0] ]
-            apdu = hexlify( ''.join( apdubytes )).upper()
-            print " => %s %s %s %s" % ( apdu[0:4], apdu[4:8],
-                                        apdu[8:10], apdu[10:] )
-            dir( cardconnection )
+            # apdubytes = [ chr( x ) for x in event.args[0] ]
+            apdubytes = event.args[0]
+            # apdu = hexlify( ''.join( apdubytes )).upper()
+            apdu = bytes(apdubytes).hex()
+            print(" => {0} {1} {2} {3}".format(apdu[0:4], apdu[4:8],
+                                               apdu[8:10], apdu[10:]))
+            dir(cardconnection)
             if zTime:
                 self.t1 = getTime()
         elif event.type == 'response':
-            sw = "%02X%02X" % tuple( event.args[1:] )
-            respdata = ''.join( [ "%02X" % x for x in event.args[0] ]) + \
-                       ( len( event.args[0] ) > 0 and " " or "" )
-            print " <= " + respdata + sw
+            sw = "{0:02x}{1:02x}".format(event.args[1], event.args[2])
+            respdata = ''.join("{:02x}".format(x) for x in event.args[0])
+            print(" <= {0} {1}".format(respdata, sw))
             if zTime:
-                print "time: %.4f ms" % ( getTime() - self.t1 )
-        else: print event.type
+                print("time: %.4f ms" % ( getTime() - self.t1 ))
+        else:
+            print(event.type)
 
 class GAFConnection( CardConnectionDecorator ):
     """ Enhance CardConnection by GAF processor """
@@ -124,7 +126,7 @@ def connectCard( reader_name = '' ):
     rege = re.compile( r'.*'+reader_name+r'.*' )
     cons = [ rr for rr in r if  rege.match( rr.__str__()) ]
     if( len( cons ) != 1 ):
-        print "Non uniq connections:", cons
+        print("Non uniq connections:", cons)
         return
     c = GAFConnection( cons[0].createConnection())
     observer = ConsoleObserver()
@@ -153,7 +155,7 @@ def resetCard( c, zReconnect = True ):
         raise BaseSCardException(hresult)
 
     if zReconnect:
-        print "Reset reader '%s' using SCardReconnect" % reader_name
+        print("Reset reader '%s' using SCardReconnect" % reader_name)
 
         # Reconnect after reset
         # hresult, dwActiveProtocol = SCardReconnect(hcard,
@@ -164,7 +166,7 @@ def resetCard( c, zReconnect = True ):
         if hresult != scard.SCARD_S_SUCCESS:
             raise BaseSCardException(hresult)
     else:
-        print "Reset reader '%s' using SCardDisconnect" % reader_name
+        print("Reset reader '%s' using SCardDisconnect" % reader_name)
 
         # Disconnect after reset
         hresult = scard.SCardDisconnect(hcard, scard.SCARD_RESET_CARD)

@@ -33,11 +33,12 @@ import unittest
 # PyCrypto
 from Crypto.Cipher import DES, DES3, AES
 # asterix
-from APDU import KeyType
-from formutil import l2s
+from .APDU import KeyType
+from .formutil import l2s
+from functools import reduce
 
 # types of secure packet
-(SMS_PP, SMS_CB, CAT_TP,) = range(3)
+(SMS_PP, SMS_CB, CAT_TP,) = list(range(3))
 
 
 class SPI:
@@ -153,7 +154,7 @@ Return signature as str."""
                 xorkey = self.xorKey2
             else:
                 xorkey = self.xorKey1
-            for i in xrange(self.BS):
+            for i in range(self.BS):
                 data[-self.BS+i] ^= ord(xorkey[i])
             cipher = AES.new(self.keyval, AES.MODE_CBC, IV='\0'*16)
             data = ''.join([chr(x) for x in data])
@@ -309,10 +310,10 @@ Returns secured data """
         pLen, hLen, spi, iKIC, iKID = unpack(">HBHBB", packet[:7])
         assert pLen + 2 == len(packet), "Wrong CPL"
         if spi != self.SPI:
-            print "Different SPI %04X" % spi
+            print("Different SPI %04X" % spi)
         TAR = packet[7:10]
         if TAR != self.TAR:
-            print "Different TAR", hexlify(TAR)
+            print("Different TAR", hexlify(TAR))
         chsumLen, iKID, KIDsign = self.getKID(spi, iKID)
         if spi & SPI.ENC1:
             assert iKIC == self.KIC.iKICD, "Different KIC"
@@ -321,7 +322,7 @@ Returns secured data """
             plainData = packet[10:]
         counter = plainData[:5]
         if counter != self.counter:
-            print "Different counter", hexlify(counter)
+            print("Different counter", hexlify(counter))
         pcounter = ord(plainData[5])
         plainData = plainData[6:]
         assert pcounter < self.KIC.BS, "Wrong pad. counter %02X" % pcounter
@@ -397,7 +398,7 @@ Returns secured data """
         """ Increment counter by given values (as int, default = 1). """
         vals = [ord(x) for x in self.counter]
         vals[4] += value
-        for i in xrange(4, 0, -1):
+        for i in range(4, 0, -1):
             if 0 <= vals[i] < 0x100:
                 break
             vals[i-1] += vals[i] / 0x100
@@ -418,7 +419,7 @@ def CRC32(s):
     crc = 0xFFFFFFFF
     for c in s:
         x = ord(c)
-        for _ in xrange(8):
+        for _ in range(8):
             carry = crc & 1
             crc >>= 1
             if carry ^ (x & 1):
@@ -433,7 +434,7 @@ def CRC16(s):
     crc = 0xFFFF
     for c in s:
         x = ord(c)
-        for _ in xrange(8):
+        for _ in range(8):
             carry = crc & 1
             crc >>= 1
             if carry ^ (x & 1):
@@ -529,8 +530,8 @@ class TestSecurePacket(unittest.TestCase):
         self.assertEqual(res, expres)
 
     def test_SPI1531(self):
-        from formutil import findTLValue
-        import CAT
+        from .formutil import findTLValue
+        from . import CAT
         sp_par = {'SPI': 0x1535,
                   'KIC': (0x15, unhexlify('263B48DBCBC1C21C0AA13E4D4516C446')),
                   'iKIDCRC': 0x15,

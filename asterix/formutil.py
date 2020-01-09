@@ -27,6 +27,7 @@ import random
 # alternatively: from Crypto.Random import random
 from Crypto.Util import number
 from Crypto.PublicKey import RSA
+from functools import reduce
 
 __all__ = ('l2s', 's2l', 's2int', 'int2s', 's2sDER', 'lpad', 'derLen', 'derLV',
            'readDERlen', 'readDERtag', 'split2TLV', 'printTLV', 'findTLValue',
@@ -37,13 +38,15 @@ __all__ = ('l2s', 's2l', 's2int', 'int2s', 's2sDER', 'lpad', 'derLen', 'derLV',
 
 def l2s(data):
     """ Transform list of u8 to string. """
-    s = ''.join([chr(x) for x in data])
+    # s = ''.join([chr(x) for x in data])
+    s = bytes(data)
     return s
 
 
 def s2l(s):
     """ Transform string to list of u8. """
-    return [ord(x) for x in s]
+    # return [ord(x) for x in s]
+    return list(s)
 
 
 def s2int(s, zSign=False):
@@ -199,7 +202,7 @@ zTag = False => no tags on top level."""
         except (AssertionError, IndexError):
             # deeper split not possible, just print
             result += tag + hexlify(item[2]).upper() + ")"
-    print result[1:] + '\n'  # strip leading EOL
+    print(result[1:] + '\n')  # strip leading EOL
 
 
 def findTLValue(data, tags):
@@ -225,12 +228,13 @@ Raise AssertException if incorrect data."""
 
 def swapNibbles(s):
     """ Swap nibbles of string s. """
-    return ''.join([chr((ord(x) >> 4) | ((ord(x) & 0x0F) << 4)) for x in s])
+    # return ''.join([chr((ord(x) >> 4) | ((ord(x) & 0x0F) << 4)) for x in s])
+    return bytes([(x >> 4) | ((x & 0x0F) << 4) for x in s])
 
 
 def randomBytes(n):
     """ Generate string of *n* (pseudo)random bytes."""
-    return ''.join([chr(random.randint(0, 255)) for i in xrange(n)])
+    return ''.join([chr(random.randint(0, 255)) for i in range(n)])
 
 
 def partition(alist, indices):
@@ -259,7 +263,7 @@ def pad80(s, BS=8):
 def unpad80(s, BS=8):
     """ Remove 80 00* padding. Return unpadded s.
  Raise AssertionError if padding is wrong. """
-    for i in xrange(-1, -1-BS, -1):
+    for i in range(-1, -1-BS, -1):
         if s[i] != '\0':
             break
     assert s[i] == '\x80', 'Wrong 80 00* padding'
@@ -270,13 +274,13 @@ def bxor(a, b):
     """ XOR of binary strings a and b. """
     assert len(a) == len(b),\
         'String XOR: lengths differ: %d vs %d\n' % (len(a), len(b))
-    return ''.join(map(lambda x: chr(ord(x[0]) ^ ord(x[1])), zip(a, b)))
+    return ''.join([chr(ord(x[0]) ^ ord(x[1])) for x in zip(a, b)])
 
 def swapBCD(s):
     """Swap odd-even digits in string s, pad by 'F' if odd-long"""
     if len(s) % 2 == 1:
         s += 'F'
-    tup = zip(s[1::2],s[0::2])
+    tup = list(zip(s[1::2],s[0::2]))
     return ''.join([i for t in tup for i in t])
 
 def luhn_checksum(number):
@@ -315,9 +319,9 @@ dp = d mod (p-1), dq = d mod (q-1), q*qinv mod p = 1
 """
     for par in ('n', 'd', 'p', 'q', 'dp', 'dq', 'qinv'):
         if par in kw:
-            assert isinstance(long(kw[par]), long), \
+            assert isinstance(int(kw[par]), int), \
                 "RSA parameter %s must be long" % par
-    e = long(kw.get('e', 0x10001L))
+    e = int(kw.get('e', 0x10001))
     if all([par not in kw for par in ('d', 'p', 'q', 'dp', 'dq', 'qinv')]):
         assert 'n' in kw, "At least modulus must be in dict"
         return RSA.construct((kw['n'], e))
@@ -348,4 +352,4 @@ def s2ECP(s, bytelen=None):
     if bytelen:
         assert l == bytelen
     assert s[0] == '\x04', "Point shall start by '04'"
-    return long(s2int(s[1:l+1])), long(s2int(s[l+1:]))
+    return int(s2int(s[1:l+1])), int(s2int(s[l+1:]))

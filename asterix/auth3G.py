@@ -32,7 +32,7 @@ import unittest
 # PyCrypto
 from Crypto.Cipher import AES
 # asterix
-from formutil import s2int, int2s, randomBytes
+from .formutil import s2int, int2s, randomBytes
 
 MASK128 = (1<<128) - 1
 
